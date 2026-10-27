@@ -1,0 +1,24 @@
+[Default Applications]
+inode/directory=thunar.desktop
+application/x-wayland-gnome-saved-search=thunar.desktop
+x-scheme-handler/jetbrains=jetbrains-toolbox.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+application/vnd.ms-publisher=org.gnome.TextEditor.desktop
+application/octet-stream=org.gnome.Loupe.desktop
+x-scheme-handler/everest=/home/meltedelement/.local/share/applications/Olympus.desktop
+text/plain=org.gnome.TextEditor.desktop
+x-scheme-handler/unityhub=unityhub.desktop
+x-scheme-handler/github-app=github-handler.desktop
+x-scheme-handler/ghapp=github-handler.desktop
+x-scheme-handler/gh=github-handler.desktop
+
+[Added Associations]
+text/markdown=org.gnome.TextEditor.desktop;
+application/vnd.ms-publisher=org.gnome.TextEditor.desktop;
+application/octet-stream=org.gnome.Loupe.desktop;
+text/plain=org.gnome.TextEditor.desktop;libreoffice-writer.desktop;
+application/pdf=org.mozilla.firefox.desktop;
+image/png=org.gnome.Loupe.desktop;
+image/jpeg=org.gnome.Loupe.desktop;
+image/webp=org.gnome.Loupe.desktop;
+x-scheme-handler/unityhub=unityhub.desktop;

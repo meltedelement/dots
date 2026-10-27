@@ -1,0 +1,12 @@
+[Unit]
+Description=Auto-reconnect AVRCP profile for Sony WH-1000XM6 (fixes quiet audio from lost absolute-volume sync)
+After=bluetooth.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/xm6-avrcp-fix.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

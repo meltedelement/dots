@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# runtime/cache files written by the dots
+home/.config/hypr/.initial_startup_done
+home/.config/btop/btop.log

@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# /* ---- 💫 Theme bundle switcher (Super+T) 💫 ---- */
+# Applies a full theme in one go: wallpaper + wallust color palette +
+# Waybar style + Kitty color theme, as defined in a ~/.config/hypr/themes/*.theme file.
+#
+# Bundle file format (all fields optional, blank = leave that piece untouched):
+#   NAME="Display Name"
+#   WALLPAPER="/absolute/path/to/image"          # under ~/Pictures/wallpapers
+#   WALLUST_THEME="ExactWallustThemeName"        # from `wallust theme list`
+#   WAYBAR_STYLE="Exact Style Filename.css"      # from ~/.config/waybar/style/
+#   KITTY_THEME="ExactKittyThemeBasename"        # from ~/.config/kitty/kitty-themes/ (no .conf)
+
+set -euo pipefail
+
+THEMES_DIR="$HOME/.config/hypr/themes"
+SCRIPTSDIR="$HOME/.config/hypr/scripts"
+KITTY_THEMES_DIR="$HOME/.config/kitty/kitty-themes"
+KITTY_CONFIG="$HOME/.config/kitty/kitty.conf"
+WAYBAR_STYLES_DIR="$HOME/.config/waybar/style"
+WAYBAR_STYLE_LINK="$HOME/.config/waybar/style.css"
+STARTUP_CONF="$HOME/.config/hypr/UserConfigs/Startup_Apps.conf"
+
+have_notify() { command -v notify-send >/dev/null 2>&1; }
+notify() { have_notify && notify-send -a ThemeBundleSwitcher -h string:x-dunst-stack-tag:themebundle "$1" "$2"; }
+
+if [[ ! -d "$THEMES_DIR" ]] || [[ -z "$(find "$THEMES_DIR" -maxdepth 1 -name '*.theme' -print -quit)" ]]; then
+  notify "No theme bundles found" "Add .theme files to $THEMES_DIR"
+  exit 0
+fi
+
+# Build a "Display Name<TAB>filename" list, choose via rofi on the display name
+declare -A name_to_file
+menu=""
+for f in "$THEMES_DIR"/*.theme; do
+  [[ -f "$f" ]] || continue
+  display_name="$(basename "$f" .theme)"
+  # shellcheck disable=SC1090
+  name_from_file="$(grep -E '^NAME=' "$f" | head -n1 | sed -E 's/^NAME="?([^"]*)"?$/\1/')"
+  [[ -n "$name_from_file" ]] && display_name="$name_from_file"
+  name_to_file["$display_name"]="$f"
+  menu+="$display_name"$'\n'
+done
+
+set +e
+choice="$(printf '%s' "$menu" | sed '/^$/d' | rofi -dmenu -i -p 'Select Theme')"
+prompt_status=$?
+set -e
+
+if (( prompt_status != 0 )) || [[ -z "${choice}" ]]; then
+  exit 0
+fi
+
+bundle_file="${name_to_file[$choice]:-}"
+if [[ -z "$bundle_file" || ! -f "$bundle_file" ]]; then
+  notify "Theme bundle error" "Could not resolve bundle for: $choice"
+  exit 1
+fi
+
+# Source the bundle in an isolated subshell-safe way (plain KEY=value file we control)
+NAME=""
+WALLPAPER=""
+WALLUST_THEME=""
+WAYBAR_STYLE=""
+KITTY_THEME=""
+# shellcheck disable=SC1090
+source "$bundle_file"
+
+start_ts=$(date +%s)
+
+# --- Wallpaper ---
+if [[ -n "$WALLPAPER" ]]; then
+  if [[ -f "$WALLPAPER" ]] && command -v swww >/dev/null 2>&1; then
+    focused_monitor=""
+    if command -v jq >/dev/null 2>&1; then
+      focused_monitor=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused) | .name' 2>/dev/null)
+    fi
+    pkill mpvpaper >/dev/null 2>&1 || true
+    pkill swaybg >/dev/null 2>&1 || true
+    pgrep -x swww-daemon >/dev/null 2>&1 || { swww-daemon --format xrgb >/dev/null 2>&1 & disown; sleep 0.3; }
+
+    SWWW_PARAMS=(--transition-fps 60 --transition-type any --transition-duration 2 --transition-bezier .43,1.19,1,.4)
+    if [[ -n "$focused_monitor" ]]; then
+      swww img -o "$focused_monitor" "$WALLPAPER" "${SWWW_PARAMS[@]}" >/dev/null 2>&1 || true
+    else
+      swww img "$WALLPAPER" "${SWWW_PARAMS[@]}" >/dev/null 2>&1 || true
+    fi
+
+    ln -sf "$WALLPAPER" "$HOME/.config/rofi/.current_wallpaper" 2>/dev/null || true
+    mkdir -p "$HOME/.config/hypr/wallpaper_effects"
+    cp -f "$WALLPAPER" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current" 2>/dev/null || true
+
+    # Persist across reboots: rewrite the swww-daemon startup line to also set this wallpaper
+    if [[ -f "$STARTUP_CONF" ]]; then
+      escaped_wallpaper=$(printf '%s' "$WALLPAPER" | sed -e 's/[\/&]/\\&/g')
+      sed -i -E "s|^exec-once = swww-daemon --format xrgb.*$|exec-once = swww-daemon --format xrgb \&\& swww img \"${escaped_wallpaper}\"|" "$STARTUP_CONF"
+    fi
+  else
+    notify "Theme bundle warning" "Wallpaper not found or swww missing: $WALLPAPER"
+  fi
+fi
+
+# --- Wallust color palette ---
+# WALLUST_THEME set: apply that named preset.
+# WALLUST_THEME blank but WALLPAPER set: derive colors from the wallpaper image itself
+# (same as `wallust run`, used by WallpaperEffects.sh / WallustSwww.sh).
+if [[ -n "$WALLUST_THEME" ]] || [[ -n "$WALLPAPER" && -f "$WALLPAPER" ]]; then
+  wallust_ok=1
+  if command -v wallust >/dev/null 2>&1; then
+    if [[ -n "$WALLUST_THEME" ]]; then
+      wallust theme -- "$WALLUST_THEME" || wallust_ok=0
+    else
+      wallust run "$WALLPAPER" -s || wallust_ok=0
+    fi
+  else
+    wallust_ok=0
+  fi
+  if [[ $wallust_ok -eq 1 ]]; then
+    mkdir -p "$HOME/.config/ghostty" || true
+
+    targets=(
+      "$HOME/.config/waybar/wallust/colors-waybar.css"
+      "$HOME/.config/rofi/wallust/colors-rofi.rasi"
+      "$HOME/.config/kitty/kitty-themes/01-Wallust.conf"
+      "$HOME/.config/hypr/wallust/wallust-hyprland.conf"
+      "$HOME/.config/ghostty/wallust.conf"
+    )
+
+    ghostty_conf="$HOME/.config/ghostty/wallust.conf"
+    if [ -f "$ghostty_conf" ]; then
+      sed -i -E 's/^(\s*palette\s*=\s*)([0-9]{1,2}):/\1\2=/' "$ghostty_conf" 2>/dev/null || true
+    fi
+
+    ok=1
+    for _ in $(seq 1 100); do
+      ok=1
+      for f in "${targets[@]}"; do
+        [ -s "$f" ] || { ok=0; break; }
+        mtime=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+        [ "$mtime" -ge "$start_ts" ] || { ok=0; break; }
+      done
+      [ $ok -eq 1 ] && break
+      sleep 0.1
+    done
+
+    if [ $ok -eq 1 ]; then
+      for _ in 1 2 3; do
+        sizes_a=(); mtimes_a=()
+        for f in "${targets[@]}"; do
+          sizes_a+=("$(stat -c %s "$f" 2>/dev/null || echo 0)")
+          mtimes_a+=("$(stat -c %Y "$f" 2>/dev/null || echo 0)")
+        done
+        sleep 0.15
+        sizes_b=(); mtimes_b=()
+        for f in "${targets[@]}"; do
+          sizes_b+=("$(stat -c %s "$f" 2>/dev/null || echo 0)")
+          mtimes_b+=("$(stat -c %Y "$f" 2>/dev/null || echo 0)")
+        done
+        if [ "${sizes_a[*]}" = "${sizes_b[*]}" ] && [ "${mtimes_a[*]}" = "${mtimes_b[*]}" ]; then
+          break
+        fi
+      done
+    else
+      sleep 0.5
+    fi
+
+    sleep 0.2
+    rofi_colors="$HOME/.config/rofi/wallust/colors-rofi.rasi"
+    if [ -f "$rofi_colors" ]; then
+      accent_hex=$(sed -n 's/^\s*color12:\s*\(#[0-9A-Fa-f]\{6\}\).*/\1/p' "$rofi_colors" | head -n1)
+      [ -z "$accent_hex" ] && accent_hex=$(sed -n 's/^\s*color13:\s*\(#[0-9A-Fa-f]\{6\}\).*/\1/p' "$rofi_colors" | head -n1)
+      if [ -n "$accent_hex" ]; then
+        sed -i -E "s|^(\s*selected-normal-background:\s*).*$|\1$accent_hex;|" "$rofi_colors"
+        sed -i -E "s|^(\s*selected-active-background:\s*).*$|\1$accent_hex;|" "$rofi_colors"
+        sed -i -E "s|^(\s*selected-urgent-background:\s*).*$|\1$accent_hex;|" "$rofi_colors"
+        sed -i -E "s|^(\s*selected-normal-foreground:\s*).*$|\1#000000;|" "$rofi_colors"
+        sed -i -E "s|^(\s*selected-active-foreground:\s*).*$|\1#000000;|" "$rofi_colors"
+        sed -i -E "s|^(\s*selected-urgent-foreground:\s*).*$|\1#000000;|" "$rofi_colors"
+      fi
+    fi
+  else
+    if [[ -n "$WALLUST_THEME" ]]; then
+      notify "Theme bundle warning" "Failed to apply wallust theme: $WALLUST_THEME"
+    else
+      notify "Theme bundle warning" "Failed to derive wallust colors from wallpaper: $WALLPAPER"
+    fi
+  fi
+fi
+
+# --- Waybar style ---
+if [[ -n "$WAYBAR_STYLE" ]]; then
+  if [[ -f "$WAYBAR_STYLES_DIR/$WAYBAR_STYLE" ]]; then
+    ln -sf "$WAYBAR_STYLES_DIR/$WAYBAR_STYLE" "$WAYBAR_STYLE_LINK"
+  else
+    notify "Theme bundle warning" "Waybar style not found: $WAYBAR_STYLE"
+  fi
+fi
+
+# --- Kitty theme ---
+kitty_target=""
+if [[ -n "$KITTY_THEME" ]]; then
+  if [[ -f "$KITTY_THEMES_DIR/$KITTY_THEME.conf" ]]; then
+    kitty_target="$KITTY_THEME"
+  else
+    notify "Theme bundle warning" "Kitty theme not found: $KITTY_THEME"
+  fi
+elif [[ -n "$WALLUST_THEME" && -f "$KITTY_THEMES_DIR/01-Wallust.conf" ]]; then
+  kitty_target="01-Wallust"
+fi
+
+if [[ -n "$kitty_target" ]]; then
+  temp_kitty_config_file=$(mktemp)
+  cp "$KITTY_CONFIG" "$temp_kitty_config_file"
+  if grep -q -E '^[#[:space:]]*include\s+\./kitty-themes/.*\.conf' "$temp_kitty_config_file"; then
+    sed -i -E "s|^([#[:space:]]*include\s+\./kitty-themes/).*\.conf|include ./kitty-themes/${kitty_target}.conf|g" "$temp_kitty_config_file"
+  else
+    if [ -s "$temp_kitty_config_file" ] && [ "$(tail -c1 "$temp_kitty_config_file")" != "" ]; then
+      echo >>"$temp_kitty_config_file"
+    fi
+    echo "include ./kitty-themes/${kitty_target}.conf" >>"$temp_kitty_config_file"
+  fi
+  cp "$temp_kitty_config_file" "$KITTY_CONFIG"
+  rm "$temp_kitty_config_file"
+fi
+
+# --- Reload everything ---
+if command -v hyprctl >/dev/null 2>&1; then
+  hyprctl reload >/dev/null 2>&1 || true
+fi
+
+if [ -x "$SCRIPTSDIR/Refresh.sh" ]; then
+  "$SCRIPTSDIR/Refresh.sh" >/dev/null 2>&1 || true
+else
+  if command -v waybar-msg >/dev/null 2>&1; then
+    waybar-msg cmd reload >/dev/null 2>&1 || true
+  else
+    pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
+  fi
+fi
+
+if pidof kitty >/dev/null 2>&1; then
+  for pid in $(pidof kitty); do kill -SIGUSR1 "$pid" 2>/dev/null || true; done
+fi
+
+if pidof ghostty >/dev/null 2>&1; then
+  for pid in $(pidof ghostty); do kill -SIGUSR2 "$pid" 2>/dev/null || true; done
+fi
+
+notify "Theme applied" "$choice"

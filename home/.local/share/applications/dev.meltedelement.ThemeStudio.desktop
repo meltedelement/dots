@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Theme Studio
+Comment=Create, edit and apply desktop themes
+Exec=/home/meltedelement/.local/bin/theme-studio
+Icon=preferences-desktop-theme
+Categories=Settings;DesktopSettings;GTK;
+Keywords=theme;wallpaper;colors;waybar;kitty;rofi;
+StartupNotify=true

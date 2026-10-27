@@ -1,0 +1,7 @@
+cc.arduino.IDE2
+com.atlauncher.ATLauncher
+com.hypixel.HytaleLauncher
+com.mattjakeman.ExtensionManager
+com.surfshark.Surfshark
+md.obsidian.Obsidian
+org.prismlauncher.PrismLauncher

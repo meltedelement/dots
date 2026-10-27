@@ -1,0 +1,5 @@
+NAME="Gruvbox Dark"
+WALLPAPER=""
+WALLUST_THEME="Gruvbox-Dark"
+WAYBAR_STYLE="[Wallust] Simple.css"
+KITTY_THEME="gruvbox_dark"

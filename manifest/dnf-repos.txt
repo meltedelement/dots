@@ -1,0 +1,22 @@
+repo id                                                             repo name
+copr:copr.fedorainfracloud.org:erikreider:SwayNotificationCenter    Copr repo for SwayNotificationCenter owned by erikreider
+copr:copr.fedorainfracloud.org:errornointernet:packages             Copr repo for packages owned by errornointernet
+copr:copr.fedorainfracloud.org:g3tchoo:prismlauncher                Copr repo for prismlauncher owned by g3tchoo
+copr:copr.fedorainfracloud.org:phracek:PyCharm                      Copr repo for PyCharm owned by phracek
+copr:copr.fedorainfracloud.org:solopasha:hyprland                   Copr repo for hyprland owned by solopasha
+copr:copr.fedorainfracloud.org:tofik:nwg-shell                      Copr repo for nwg-shell owned by tofik
+coprdep:copr.fedorainfracloud.org:erikreider:SwayNotificationCenter Copr copr.fedorainfracloud.org/tofik/nwg-shell runtime dependency #3 - erikreider/SwayNotificationCenter
+coprdep:copr.fedorainfracloud.org:mochaa:gtk-session-lock           Copr copr.fedorainfracloud.org/tofik/nwg-shell runtime dependency #2 - mochaa/gtk-session-lock
+coprdep:copr.fedorainfracloud.org:tofik:sway                        Copr copr.fedorainfracloud.org/tofik/nwg-shell runtime dependency #1 - tofik/sway
+fedora                                                              Fedora 42 - x86_64
+fedora-cisco-openh264                                               Fedora 42 openh264 (From Cisco) - x86_64
+google-chrome                                                       google-chrome
+rpmfusion-free                                                      RPM Fusion for Fedora 42 - Free
+rpmfusion-free-updates                                              RPM Fusion for Fedora 42 - Free - Updates
+rpmfusion-nonfree                                                   RPM Fusion for Fedora 42 - Nonfree
+rpmfusion-nonfree-nvidia-driver                                     RPM Fusion for Fedora 42 - Nonfree - NVIDIA Driver
+rpmfusion-nonfree-steam                                             RPM Fusion for Fedora 42 - Nonfree - Steam
+rpmfusion-nonfree-updates                                           RPM Fusion for Fedora 42 - Nonfree - Updates
+sbt-rpm                                                             sbt-rpm
+unityhub                                                            Unity Hub
+updates                                                             Fedora 42 - x86_64 - Updates

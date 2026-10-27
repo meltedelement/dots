@@ -1,0 +1,123 @@
+/* swaync 0.12 (GTK4) — layered on /etc/xdg/swaync/style.css (loaded first by swaync), coloured by wallust.
+   Previous GTK3-era style: style.css.bak-gtk3 */
+
+@import '../../.config/waybar/wallust/colors-waybar.css';
+
+:root {
+  --text-color: @foreground;
+  --noti-border-color: alpha(@color12, 0.35);
+  --noti-bg-hover: alpha(@foreground, 0.06);
+  --noti-bg-focus: alpha(@foreground, 0.04);
+  --noti-close-bg: alpha(@foreground, 0.08);
+  --noti-close-bg-hover: alpha(@color9, 0.85);
+  --cc-bg: alpha(@background, 0.88);
+  --bg-selected: @color12;
+  --border-radius: 14px;
+  --notification-icon-size: 48px;
+  --font-size-summary: 14px;
+  --font-size-body: 13px;
+}
+
+* {
+  font-family: "JetBrains Mono Nerd Font", sans-serif;
+}
+
+/* Card */
+.notification-row .notification-background {
+  padding: 6px 10px;
+}
+
+.notification-row .notification-background .notification {
+  background: alpha(@background, 0.90);
+  border: 1px solid var(--noti-border-color);
+  box-shadow: 0 4px 14px alpha(black, 0.35);
+}
+
+.notification-row .notification-background .notification .notification-default-action {
+  padding: 8px 10px;
+}
+
+/* Accent strip by urgency */
+.notification-row .notification-background .notification.low {
+  border-left: 3px solid alpha(@color8, 0.8);
+}
+.notification-row .notification-background .notification.normal {
+  border-left: 3px solid @color12;
+}
+.notification-row .notification-background .notification.critical {
+  border: 1px solid alpha(@color9, 0.6);
+  border-left: 3px solid @color9;
+  background: alpha(mix(@background, @color1, 0.15), 0.94);
+}
+
+/* Text */
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .summary {
+  color: @foreground;
+}
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
+  font-size: 11px;
+  font-weight: normal;
+  color: alpha(@foreground, 0.55);
+}
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .body {
+  color: alpha(@foreground, 0.80);
+}
+
+.notification-row .notification-background .notification .notification-default-action .notification-content .image {
+  border-radius: 10px;
+  margin: 4px 10px 4px 2px;
+}
+
+.notification-row .notification-background .notification .notification-default-action .notification-content .body-image {
+  background-color: transparent;
+  border-radius: 8px;
+}
+
+.notification-row .notification-background .notification .notification-default-action .notification-content progressbar progress {
+  background: @color12;
+}
+
+/* Close button */
+.close-button {
+  min-width: 22px;
+  min-height: 22px;
+  margin-top: 10px;
+  margin-right: 10px;
+}
+.close-button:hover {
+  color: @background;
+}
+
+/* Action buttons */
+.notification-row .notification-background .notification .notification-action > button {
+  background: alpha(@foreground, 0.06);
+  border: 1px solid alpha(@color12, 0.25);
+  box-shadow: none;
+  padding: 4px 8px;
+}
+.notification-row .notification-background .notification .notification-action > button:hover {
+  background: alpha(@color12, 0.25);
+}
+
+/* Control centre */
+.control-center {
+  background: var(--cc-bg);
+  border: 1px solid var(--noti-border-color);
+  border-radius: 16px;
+}
+
+.widget-title > button,
+.widget-buttons-grid flowboxchild > button {
+  background: alpha(@foreground, 0.06);
+  border: none;
+  box-shadow: none;
+  border-radius: 10px;
+}
+.widget-title > button:hover,
+.widget-buttons-grid flowboxchild > button:hover {
+  background: alpha(@color12, 0.30);
+}
+
+.widget-dnd > switch:checked {
+  background: @color12;
+}
